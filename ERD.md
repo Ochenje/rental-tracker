@@ -1,5 +1,32 @@
-# rental-tracker
-A personal rental tracker that lists items, shows your inventory, rents things out, and confirms returns.
+       ┌────────────────────────┐
+       │         Users          │
+       ├──────┬──────────┬──────┤
+       │ int  │ id       │  PK  │
+       │ text │ username │  UK  │
+       └────────────────────────┘
+                   │
+                   │ owns (1-to-many)
+                   ├───┐
+                   │   ▼
+       ┌───────────┴────────────┐
+       │      listed_items      │
+       ├──────┬──────────┬──────┤
+       │ int  │ item_id  │  PK  │
+       │ int  │ owner_id │  FK  │
+       │ text │ item_name│      │
+       └────────────────────────┘
+                   │
+                   │ tracks (1-to-many)
+                   ├───┐
+                   │   ▼
+       ┌───────────┴────────────┐
+       │        rentals         │
+       ├──────┬──────────┬──────┤
+       │ int  │ rental_id│  PK  │
+       │ int  │ item_id  │  FK  │
+       │ int  │ renter_id│  FK  │
+       └────────────────────────┘
+
 
 # 🗃️ Database Schema Definitions
 
