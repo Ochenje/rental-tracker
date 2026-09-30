@@ -28,7 +28,7 @@ public class ItemRepository {
             pstmt.setString(5, status);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            if (e.getErrorCode() == 19) {
+            if (e.getErrorCode() == 19 || e.getMessage().contains("CONSTRAINT")) {
                 throw new ConstraintViolationException("Item properties violate database row schema integrity.", e);
             }
             throw new DatabaseException("Error inserting asset item entry.", e);
@@ -70,7 +70,7 @@ public class ItemRepository {
                 throw new NotFoundException("Target catalog item entity does not exist.");
             }
         } catch (SQLException e) {
-            if (e.getErrorCode() == 19) {
+            if (e.getErrorCode() == 19 || e.getMessage().contains("CONSTRAINT")) {
                 throw new ConstraintViolationException("State change violates system rules.", e);
             }
             throw new DatabaseException("Error writing item data status.", e);
@@ -89,7 +89,7 @@ public class ItemRepository {
                     rs.getString("created_at")
             );
         } catch (SQLException e) {
-            throw new MappingException("Failed structural translation from database table into Java Item object.", e);
+            throw new MappingException("Failed structural translation into Java Item object.", e);
         }
     }
 }

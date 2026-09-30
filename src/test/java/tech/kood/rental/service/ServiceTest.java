@@ -48,17 +48,21 @@ public class ServiceTest {
     @Test
     public void testPreventOwnerFromRentingOwnAsset() {
         userRepo.insert("alice");
-        int ownerId = userRepo.findByUsername("alice").id;
-        itemRepo.insert(ownerId, "Projector", "4K Video projector", 15.00, "available");
+        var user = userRepo.findByUsername("alice");
+        assertNotNull(user);
+        
+        itemRepo.insert(user.id, "Projector", "4K Video projector", 15.00, "available");
         Item item = itemRepo.findAllAvailable().get(0);
 
         assertThrows(IllegalArgumentException.class, () -> {
-            service.rentItem(item.itemId, ownerId, "2026-03-01", "2026-03-05");
+            service.rentItem(item.itemId, user.id, "2026-03-01", "2026-03-05");
         });
     }
 
     @Test
     public void testExceptionOnBlankUsernames() {
-        assertThrows(IllegalArgumentException.class, () -> service.registerUser("   "));
+        assertThrows(IllegalArgumentException.class, () -> {
+            service.registerUser("   ");
+        });
     }
 }

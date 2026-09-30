@@ -3,7 +3,6 @@ package tech.kood.rental.repository;
 import tech.kood.rental.domain.Rental;
 import tech.kood.rental.infrastructure.DatabaseConnection;
 import tech.kood.rental.repository.exception.DatabaseException;
-import tech.kood.rental.repository.exception.MappingException;
 import tech.kood.rental.repository.exception.NotFoundException;
 
 import java.sql.Connection;

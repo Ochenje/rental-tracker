@@ -32,11 +32,12 @@ public class Main {
              InputStream is = Main.class.getClassLoader().getResourceAsStream("schema.sql")) {
             
             if (is == null) return;
-            Scanner scanner = new Scanner(is).useDelimiter(";");
-            while (scanner.hasNext()) {
-                String sql = scanner.next().trim();
-                if (!sql.isEmpty()) {
-                    stmt.execute(sql);
+            try (Scanner scanner = new Scanner(is).useDelimiter(";")) {
+                while (scanner.hasNext()) {
+                    String sql = scanner.next().trim();
+                    if (!sql.isEmpty()) {
+                        stmt.execute(sql);
+                    }
                 }
             }
         } catch (Exception e) {

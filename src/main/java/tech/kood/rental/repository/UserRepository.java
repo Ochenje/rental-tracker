@@ -4,7 +4,6 @@ import tech.kood.rental.domain.User;
 import tech.kood.rental.infrastructure.DatabaseConnection;
 import tech.kood.rental.repository.exception.ConstraintViolationException;
 import tech.kood.rental.repository.exception.DatabaseException;
-import tech.kood.rental.repository.exception.MappingException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -24,7 +23,7 @@ public class UserRepository {
             pstmt.setString(1, username);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            if (e.getErrorCode() == 19) {
+            if (e.getErrorCode() == 19 || e.getMessage().contains("CONSTRAINT")) {
                 throw new ConstraintViolationException("Username already exists.", e);
             }
             throw new DatabaseException("Error creating user profile.", e);
