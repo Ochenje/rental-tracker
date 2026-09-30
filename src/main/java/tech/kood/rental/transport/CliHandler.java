@@ -11,15 +11,20 @@ public class CliHandler {
     private final RentalService service;
     private final Scanner scanner;
     private User currentUser;
+    private boolean running = true;
 
     public CliHandler(RentalService service) {
+        this(service, new Scanner(System.in));
+    }
+
+    public CliHandler(RentalService service, Scanner scanner) {
         this.service = service;
-        this.scanner = new Scanner(System.in);
+        this.scanner = scanner;
     }
 
     public void run() {
         System.out.println("Welcome to Nairobi Rental Tracker Terminal Workspace.");
-        while (true) {
+        while (running) {
             if (currentUser == null) {
                 showAuthMenu();
             } else {
@@ -37,8 +42,8 @@ public class CliHandler {
             if ("1".equals(selection)) {
                 System.out.print("Choose unique username: ");
                 String name = scanner.nextLine();
-                service.registerUser(name);
-                System.out.println("Account profile provisioned.");
+                currentUser = service.getOrRegisterUser(name);
+                System.out.println("Account ready for: " + currentUser.username);
             } else if ("2".equals(selection)) {
                 System.out.print("Input username: ");
                 String name = scanner.nextLine();
@@ -50,7 +55,9 @@ public class CliHandler {
                     System.out.println("No matching user profile record.");
                 }
             } else if ("3".equals(selection)) {
-                System.exit(0);
+                running = false;
+            } else {
+                System.out.println("Invalid selection parameter index.");
             }
         } catch (Exception e) {
             System.out.println("Operation Exception Error: " + e.getMessage());
@@ -59,7 +66,7 @@ public class CliHandler {
 
     private void showMainMenu() {
         System.out.println("\n--- Connected Workspace Dashboard ---");
-        System.out.println("1. List an Item Asset\n2. View Public Listings\n3. Rent an Item\n4. Return an Item\n5. Sign Out");
+        System.out.println("1. List an Item Asset\n2. View Public Listings\n3. View Inventory / Delist\n4. Rent an Item\n5. Return an Item\n6. Sign Out");
         System.out.print("Action Selection -> ");
         String choice = scanner.nextLine();
 
@@ -81,19 +88,30 @@ public class CliHandler {
                     }
                 }
                 case "3" -> {
-                    System.out.print("Enter Item ID target: "); int id = Integer.parseInt(scanner.nextLine());
-                    System.out.print("Start date timestamp (YYYY-MM-DD): "); String start = scanner.nextLine();
-                    System.out.print("End date timestamp (YYYY-MM-DD): "); String end = scanner.nextLine();
-                    service.rentItem(id, currentUser.id, start, end);
-                    System.out.println("Lease tracking parameters registered safely.");
+                    List<Item> inventory = service.getUserInventory(currentUser.id);
+                    if (inventory.isEmpty()) {
+                        System.out.println("Your inventory is empty.");
+                        break;
+                    }
+                    inventory.forEach(i -> System.out.printf("[%d] %s (%s)%n", i.itemId, i.itemName, i.status));
+                    System.out.print("Item ID to delist (0 to return): "); int id = Integer.parseInt(scanner.nextLine());
+                    if (id != 0) service.delistItem(id, currentUser.id);
                 }
                 case "4" -> {
+                    System.out.print("Enter Item ID target: "); int id = Integer.parseInt(scanner.nextLine());
+                    System.out.print("Renter username: "); String renter = scanner.nextLine();
+                    System.out.print("Start date (YYYY-MM-DD): "); String start = scanner.nextLine();
+                    System.out.print("Number of rental days: "); int days = Integer.parseInt(scanner.nextLine());
+                    service.rentItem(id, renter, start, days);
+                    System.out.println("Lease tracking parameters registered safely.");
+                }
+                case "5" -> {
                     System.out.print("Enter Item ID to return: "); int id = Integer.parseInt(scanner.nextLine());
                     System.out.print("Return time execution timestamp: "); String time = scanner.nextLine();
                     service.returnItem(id, time);
                     System.out.println("Item log successfully closed and marked safe for circulation again.");
                 }
-                case "5" -> {
+                case "6" -> {
                     currentUser = null;
                     System.out.println("Logged out securely.");
                 }

@@ -1,12 +1,13 @@
 package tech.kood.rental.service;
 
 import tech.kood.rental.domain.Item;
-import tech.kood.rental.domain.User;
 import tech.kood.rental.domain.Rental;
+import tech.kood.rental.domain.User;
 import tech.kood.rental.repository.ItemRepository;
 import tech.kood.rental.repository.RentalRepository;
 import tech.kood.rental.repository.UserRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class RentalService {
@@ -27,6 +28,17 @@ public class RentalService {
         userRepo.insert(username.trim());
     }
 
+    public User getOrRegisterUser(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new IllegalArgumentException("Username cannot be left blank.");
+        }
+        String normalizedUsername = username.trim();
+        User existingUser = userRepo.findByUsername(normalizedUsername);
+        if (existingUser != null) return existingUser;
+        userRepo.insert(normalizedUsername);
+        return userRepo.findByUsername(normalizedUsername);
+    }
+
     public User getUser(String username) {
         return userRepo.findByUsername(username);
     }
@@ -40,26 +52,34 @@ public class RentalService {
         return itemRepo.findAllAvailable();
     }
 
-    // State Machine Guards for Renting
-    public void rentItem(int itemId, int renterId, String start, String end) {
-        Item item = itemRepo.findById(itemId);
-        if (item == null) throw new IllegalArgumentException("Item identity value does not exist.");
-        if (!"available".equals(item.status)) {
-            throw new IllegalStateException("Item is locked and unavailable for booking rentals.");
-        }
-        if (item.ownerId == renterId) {
-            throw new IllegalArgumentException("Owners cannot rent their own assets.");
-        }
-
-        itemRepo.updateStatus(itemId, "rented");
-        rentalRepo.insert(itemId, renterId, start, end);
+    public List<Item> getUserInventory(int ownerId) {
+        return itemRepo.findByOwnerId(ownerId);
     }
 
-    // State Machine Guards for Returning
+    public void delistItem(int itemId, int ownerId) {
+        Item item = itemRepo.findById(itemId);
+        if (item == null) throw new IllegalArgumentException("Item identity value does not exist.");
+        if (item.ownerId != ownerId) throw new IllegalArgumentException("Only the owner can delist this item.");
+        itemRepo.updateStatus(itemId, "unlisted");
+    }
+
+    public void rentItem(int itemId, int renterId, String start, int rentalDays) {
+        Item item = requireAvailableItem(itemId);
+        String end = calculateEndDate(start, rentalDays);
+        recordRental(item, renterId, start, end);
+    }
+
+    public void rentItem(int itemId, String renterUsername, String start, int rentalDays) {
+        Item item = requireAvailableItem(itemId);
+        String end = calculateEndDate(start, rentalDays);
+        User renter = getOrRegisterUser(renterUsername);
+        recordRental(item, renter.id, start, end);
+    }
+
     public void returnItem(int itemId, String returnTime) {
         Item item = itemRepo.findById(itemId);
         if (item == null) throw new IllegalArgumentException("Item identity value does not exist.");
-        if (!"rented".equals(item.status)) {
+        if (!"rented".equals(item.status) && !"unlisted".equals(item.status)) {
             throw new IllegalStateException("Item cannot be returned since it is not currently rented out.");
         }
 
@@ -69,6 +89,30 @@ public class RentalService {
         }
 
         rentalRepo.closeRental(activeRental.rentalId, returnTime);
-        itemRepo.updateStatus(itemId, "available");
+        if ("rented".equals(item.status)) {
+            itemRepo.updateStatus(itemId, "available");
+        }
+    }
+
+    private Item requireAvailableItem(int itemId) {
+        Item item = itemRepo.findById(itemId);
+        if (item == null) throw new IllegalArgumentException("Item identity value does not exist.");
+        if (!"available".equals(item.status)) {
+            throw new IllegalStateException("Item is locked and unavailable for booking rentals.");
+        }
+        return item;
+    }
+
+    private void recordRental(Item item, int renterId, String start, String end) {
+        if (item.ownerId == renterId) {
+            throw new IllegalArgumentException("Owners cannot rent their own assets.");
+        }
+        itemRepo.updateStatus(item.itemId, "rented");
+        rentalRepo.insert(item.itemId, renterId, start, end);
+    }
+
+    private String calculateEndDate(String start, int rentalDays) {
+        if (rentalDays <= 0) throw new IllegalArgumentException("Rental duration must be greater than zero days.");
+        return LocalDate.parse(start).plusDays(rentalDays).toString();
     }
 }

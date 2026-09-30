@@ -14,8 +14,9 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        DatabaseConnection dbConnection = new DatabaseConnection("app.db");
-        initializeDatabase(dbConnection);
+        String databasePath = args.length == 0 ? System.getProperty("rental.database", "app.db") : args[0];
+        DatabaseConnection dbConnection = new DatabaseConnection(databasePath);
+        initializeDatabase(dbConnection, Main.class.getClassLoader().getResourceAsStream("schema.sql"));
 
         UserRepository userRepo = new UserRepository(dbConnection);
         ItemRepository itemRepo = new ItemRepository(dbConnection);
@@ -26,10 +27,10 @@ public class Main {
         cliHandler.run();
     }
 
-    private static void initializeDatabase(DatabaseConnection db) {
+    static void initializeDatabase(DatabaseConnection db, InputStream schema) {
         try (Connection conn = db.getConnection();
              Statement stmt = conn.createStatement();
-             InputStream is = Main.class.getClassLoader().getResourceAsStream("schema.sql")) {
+             InputStream is = schema) {
             
             if (is == null) return;
             try (Scanner scanner = new Scanner(is).useDelimiter(";")) {

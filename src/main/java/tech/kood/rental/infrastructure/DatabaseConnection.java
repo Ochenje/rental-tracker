@@ -13,7 +13,11 @@ public class DatabaseConnection {
 
     public Connection getConnection() {
         try {
-            return DriverManager.getConnection(dbUrl);
+            Connection connection = DriverManager.getConnection(dbUrl);
+            try (var statement = connection.createStatement()) {
+                statement.execute("PRAGMA foreign_keys = ON");
+            }
+            return connection;
         } catch (Exception e) {
             throw new CannotOpenDatabaseException("Failed to establish SQLite database connection.", e);
         }

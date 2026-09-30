@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RentalService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rental-tracker</a> &gt; <a href="index.source.html" class="el_package">tech.kood.rental.service</a> &gt; <span class="el_source">RentalService.java</span></div><h1>RentalService.java</h1><pre class="source lang-java linenums">package tech.kood.rental.service;
+
+import tech.kood.rental.domain.Item;
+import tech.kood.rental.domain.Rental;
+import tech.kood.rental.domain.User;
+import tech.kood.rental.repository.ItemRepository;
+import tech.kood.rental.repository.RentalRepository;
+import tech.kood.rental.repository.UserRepository;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public class RentalService {
+    private final UserRepository userRepo;
+    private final ItemRepository itemRepo;
+    private final RentalRepository rentalRepo;
+
+<span class="fc" id="L18">    public RentalService(UserRepository userRepo, ItemRepository itemRepo, RentalRepository rentalRepo) {</span>
+<span class="fc" id="L19">        this.userRepo = userRepo;</span>
+<span class="fc" id="L20">        this.itemRepo = itemRepo;</span>
+<span class="fc" id="L21">        this.rentalRepo = rentalRepo;</span>
+<span class="fc" id="L22">    }</span>
+
+    public void registerUser(String username) {
+<span class="pc bpc" id="L25" title="1 of 4 branches missed.">        if (username == null || username.trim().isEmpty()) {</span>
+<span class="fc" id="L26">            throw new IllegalArgumentException(&quot;Username cannot be left blank.&quot;);</span>
+        }
+<span class="fc" id="L28">        userRepo.insert(username.trim());</span>
+<span class="fc" id="L29">    }</span>
+
+    public User getOrRegisterUser(String username) {
+<span class="fc bfc" id="L32" title="All 4 branches covered.">        if (username == null || username.trim().isEmpty()) {</span>
+<span class="fc" id="L33">            throw new IllegalArgumentException(&quot;Username cannot be left blank.&quot;);</span>
+        }
+<span class="fc" id="L35">        String normalizedUsername = username.trim();</span>
+<span class="fc" id="L36">        User existingUser = userRepo.findByUsername(normalizedUsername);</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (existingUser != null) return existingUser;</span>
+<span class="fc" id="L38">        userRepo.insert(normalizedUsername);</span>
+<span class="fc" id="L39">        return userRepo.findByUsername(normalizedUsername);</span>
+    }
+
+    public User getUser(String username) {
+<span class="fc" id="L43">        return userRepo.findByUsername(username);</span>
+    }
+
+    public void listItem(int ownerId, String name, String desc, double cost) {
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (cost &lt;= 0) throw new IllegalArgumentException(&quot;Cost allocation metric must evaluate above 0.&quot;);</span>
+<span class="fc" id="L48">        itemRepo.insert(ownerId, name, desc, cost, &quot;available&quot;);</span>
+<span class="fc" id="L49">    }</span>
+
+    public List&lt;Item&gt; getAvailableItems() {
+<span class="fc" id="L52">        return itemRepo.findAllAvailable();</span>
+    }
+
+    public List&lt;Item&gt; getUserInventory(int ownerId) {
+<span class="fc" id="L56">        return itemRepo.findByOwnerId(ownerId);</span>
+    }
+
+    public void delistItem(int itemId, int ownerId) {
+<span class="fc" id="L60">        Item item = itemRepo.findById(itemId);</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (item == null) throw new IllegalArgumentException(&quot;Item identity value does not exist.&quot;);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (item.ownerId != ownerId) throw new IllegalArgumentException(&quot;Only the owner can delist this item.&quot;);</span>
+<span class="fc" id="L63">        itemRepo.updateStatus(itemId, &quot;unlisted&quot;);</span>
+<span class="fc" id="L64">    }</span>
+
+    public void rentItem(int itemId, int renterId, String start, int rentalDays) {
+<span class="fc" id="L67">        Item item = requireAvailableItem(itemId);</span>
+<span class="fc" id="L68">        String end = calculateEndDate(start, rentalDays);</span>
+<span class="fc" id="L69">        recordRental(item, renterId, start, end);</span>
+<span class="fc" id="L70">    }</span>
+
+    public void rentItem(int itemId, String renterUsername, String start, int rentalDays) {
+<span class="fc" id="L73">        Item item = requireAvailableItem(itemId);</span>
+<span class="fc" id="L74">        String end = calculateEndDate(start, rentalDays);</span>
+<span class="fc" id="L75">        User renter = getOrRegisterUser(renterUsername);</span>
+<span class="fc" id="L76">        recordRental(item, renter.id, start, end);</span>
+<span class="fc" id="L77">    }</span>
+
+    public void returnItem(int itemId, String returnTime) {
+<span class="fc" id="L80">        Item item = itemRepo.findById(itemId);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (item == null) throw new IllegalArgumentException(&quot;Item identity value does not exist.&quot;);</span>
+<span class="fc bfc" id="L82" title="All 4 branches covered.">        if (!&quot;rented&quot;.equals(item.status) &amp;&amp; !&quot;unlisted&quot;.equals(item.status)) {</span>
+<span class="fc" id="L83">            throw new IllegalStateException(&quot;Item cannot be returned since it is not currently rented out.&quot;);</span>
+        }
+
+<span class="fc" id="L86">        Rental activeRental = rentalRepo.findActiveByItemId(itemId);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">        if (activeRental == null) {</span>
+<span class="fc" id="L88">            throw new IllegalStateException(&quot;No active transactional booking linkage maps to this item.&quot;);</span>
+        }
+
+<span class="fc" id="L91">        rentalRepo.closeRental(activeRental.rentalId, returnTime);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (&quot;rented&quot;.equals(item.status)) {</span>
+<span class="fc" id="L93">            itemRepo.updateStatus(itemId, &quot;available&quot;);</span>
+        }
+<span class="fc" id="L95">    }</span>
+
+    private Item requireAvailableItem(int itemId) {
+<span class="fc" id="L98">        Item item = itemRepo.findById(itemId);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (item == null) throw new IllegalArgumentException(&quot;Item identity value does not exist.&quot;);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        if (!&quot;available&quot;.equals(item.status)) {</span>
+<span class="fc" id="L101">            throw new IllegalStateException(&quot;Item is locked and unavailable for booking rentals.&quot;);</span>
+        }
+<span class="fc" id="L103">        return item;</span>
+    }
+
+    private void recordRental(Item item, int renterId, String start, String end) {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        if (item.ownerId == renterId) {</span>
+<span class="fc" id="L108">            throw new IllegalArgumentException(&quot;Owners cannot rent their own assets.&quot;);</span>
+        }
+<span class="fc" id="L110">        itemRepo.updateStatus(item.itemId, &quot;rented&quot;);</span>
+<span class="fc" id="L111">        rentalRepo.insert(item.itemId, renterId, start, end);</span>
+<span class="fc" id="L112">    }</span>
+
+    private String calculateEndDate(String start, int rentalDays) {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (rentalDays &lt;= 0) throw new IllegalArgumentException(&quot;Rental duration must be greater than zero days.&quot;);</span>
+<span class="fc" id="L116">        return LocalDate.parse(start).plusDays(rentalDays).toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

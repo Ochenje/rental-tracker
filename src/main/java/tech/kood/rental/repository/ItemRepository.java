@@ -28,8 +28,8 @@ public class ItemRepository {
             pstmt.setString(5, status);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            if (e.getErrorCode() == 19 || e.getMessage().contains("CONSTRAINT")) {
-                throw new ConstraintViolationException("Item properties violate database row schema integrity.", e);
+            if (ConstraintViolationException.isConstraintViolation(e)) {
+                throw ConstraintViolationException.from(e);
             }
             throw new DatabaseException("Error inserting asset item entry.", e);
         }
@@ -61,6 +61,22 @@ public class ItemRepository {
         return null;
     }
 
+    public List<Item> findByOwnerId(int ownerId) {
+        List<Item> items = new ArrayList<>();
+        String sql = "SELECT * FROM listed_items WHERE owner_id = ? ORDER BY item_id";
+        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, ownerId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    items.add(mapRowToItem(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("Error retrieving owner's item inventory.", e);
+        }
+        return items;
+    }
+
     public void updateStatus(int itemId, String newStatus) {
         String sql = "UPDATE listed_items SET status = ? WHERE item_id = ?";
         try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -70,8 +86,8 @@ public class ItemRepository {
                 throw new NotFoundException("Target catalog item entity does not exist.");
             }
         } catch (SQLException e) {
-            if (e.getErrorCode() == 19 || e.getMessage().contains("CONSTRAINT")) {
-                throw new ConstraintViolationException("State change violates system rules.", e);
+            if (ConstraintViolationException.isConstraintViolation(e)) {
+                throw ConstraintViolationException.from(e);
             }
             throw new DatabaseException("Error writing item data status.", e);
         }

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CliHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rental-tracker</a> &gt; <a href="index.source.html" class="el_package">tech.kood.rental.transport</a> &gt; <span class="el_source">CliHandler.java</span></div><h1>CliHandler.java</h1><pre class="source lang-java linenums">package tech.kood.rental.transport;
+
+import tech.kood.rental.domain.Item;
+import tech.kood.rental.domain.User;
+import tech.kood.rental.service.RentalService;
+
+import java.util.List;
+import java.util.Scanner;
+
+public class CliHandler {
+    private final RentalService service;
+    private final Scanner scanner;
+    private User currentUser;
+<span class="fc" id="L14">    private boolean running = true;</span>
+
+    public CliHandler(RentalService service) {
+<span class="fc" id="L17">        this(service, new Scanner(System.in));</span>
+<span class="fc" id="L18">    }</span>
+
+<span class="fc" id="L20">    public CliHandler(RentalService service, Scanner scanner) {</span>
+<span class="fc" id="L21">        this.service = service;</span>
+<span class="fc" id="L22">        this.scanner = scanner;</span>
+<span class="fc" id="L23">    }</span>
+
+    public void run() {
+<span class="fc" id="L26">        System.out.println(&quot;Welcome to Nairobi Rental Tracker Terminal Workspace.&quot;);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        while (running) {</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">            if (currentUser == null) {</span>
+<span class="fc" id="L29">                showAuthMenu();</span>
+            } else {
+<span class="fc" id="L31">                showMainMenu();</span>
+            }
+        }
+<span class="fc" id="L34">    }</span>
+
+    private void showAuthMenu() {
+<span class="fc" id="L37">        System.out.println(&quot;\n1. Create Profile\n2. Authenticate Sign-In\n3. Exit System&quot;);</span>
+<span class="fc" id="L38">        System.out.print(&quot;Action Selection -&gt; &quot;);</span>
+<span class="fc" id="L39">        String selection = scanner.nextLine();</span>
+
+        try {
+<span class="fc bfc" id="L42" title="All 2 branches covered.">            if (&quot;1&quot;.equals(selection)) {</span>
+<span class="fc" id="L43">                System.out.print(&quot;Choose unique username: &quot;);</span>
+<span class="fc" id="L44">                String name = scanner.nextLine();</span>
+<span class="fc" id="L45">                currentUser = service.getOrRegisterUser(name);</span>
+<span class="fc" id="L46">                System.out.println(&quot;Account ready for: &quot; + currentUser.username);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">            } else if (&quot;2&quot;.equals(selection)) {</span>
+<span class="fc" id="L48">                System.out.print(&quot;Input username: &quot;);</span>
+<span class="fc" id="L49">                String name = scanner.nextLine();</span>
+<span class="fc" id="L50">                User user = service.getUser(name);</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">                if (user != null) {</span>
+<span class="fc" id="L52">                    currentUser = user;</span>
+<span class="fc" id="L53">                    System.out.println(&quot;Authentication authenticated! Session active for: &quot; + currentUser.username);</span>
+                } else {
+<span class="fc" id="L55">                    System.out.println(&quot;No matching user profile record.&quot;);</span>
+                }
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            } else if (&quot;3&quot;.equals(selection)) {</span>
+<span class="fc" id="L58">                running = false;</span>
+            } else {
+<span class="fc" id="L60">                System.out.println(&quot;Invalid selection parameter index.&quot;);</span>
+            }
+<span class="fc" id="L62">        } catch (Exception e) {</span>
+<span class="fc" id="L63">            System.out.println(&quot;Operation Exception Error: &quot; + e.getMessage());</span>
+<span class="fc" id="L64">        }</span>
+<span class="fc" id="L65">    }</span>
+
+    private void showMainMenu() {
+<span class="fc" id="L68">        System.out.println(&quot;\n--- Connected Workspace Dashboard ---&quot;);</span>
+<span class="fc" id="L69">        System.out.println(&quot;1. List an Item Asset\n2. View Public Listings\n3. View Inventory / Delist\n4. Rent an Item\n5. Return an Item\n6. Sign Out&quot;);</span>
+<span class="fc" id="L70">        System.out.print(&quot;Action Selection -&gt; &quot;);</span>
+<span class="fc" id="L71">        String choice = scanner.nextLine();</span>
+
+        try {
+<span class="fc bfc" id="L74" title="All 7 branches covered.">            switch (choice) {</span>
+                case &quot;1&quot; -&gt; {
+<span class="fc" id="L76">                    System.out.print(&quot;Item name: &quot;); String name = scanner.nextLine();</span>
+<span class="fc" id="L77">                    System.out.print(&quot;Description context: &quot;); String desc = scanner.nextLine();</span>
+<span class="fc" id="L78">                    System.out.print(&quot;Daily pricing cost rate: &quot;); double cost = Double.parseDouble(scanner.nextLine());</span>
+<span class="fc" id="L79">                    service.listItem(currentUser.id, name, desc, cost);</span>
+<span class="fc" id="L80">                    System.out.println(&quot;Catalog asset successfully deployed into circulation marketplace.&quot;);</span>
+<span class="fc" id="L81">                }</span>
+                case &quot;2&quot; -&gt; {
+<span class="fc" id="L83">                    List&lt;Item&gt; catalog = service.getAvailableItems();</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">                    if (catalog.isEmpty()) {</span>
+<span class="fc" id="L85">                        System.out.println(&quot;No available items listed at the moment.&quot;);</span>
+                    } else {
+<span class="fc" id="L87">                        catalog.forEach(i -&gt; System.out.printf(&quot;[%d] %s - %s ($%.2f/day)%n&quot;, i.itemId, i.itemName, i.description, i.costPerDay));</span>
+                    }
+<span class="fc" id="L89">                }</span>
+                case &quot;3&quot; -&gt; {
+<span class="fc" id="L91">                    List&lt;Item&gt; inventory = service.getUserInventory(currentUser.id);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">                    if (inventory.isEmpty()) {</span>
+<span class="fc" id="L93">                        System.out.println(&quot;Your inventory is empty.&quot;);</span>
+<span class="fc" id="L94">                        break;</span>
+                    }
+<span class="fc" id="L96">                    inventory.forEach(i -&gt; System.out.printf(&quot;[%d] %s (%s)%n&quot;, i.itemId, i.itemName, i.status));</span>
+<span class="fc" id="L97">                    System.out.print(&quot;Item ID to delist (0 to return): &quot;); int id = Integer.parseInt(scanner.nextLine());</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">                    if (id != 0) service.delistItem(id, currentUser.id);</span>
+<span class="fc" id="L99">                }</span>
+                case &quot;4&quot; -&gt; {
+<span class="fc" id="L101">                    System.out.print(&quot;Enter Item ID target: &quot;); int id = Integer.parseInt(scanner.nextLine());</span>
+<span class="fc" id="L102">                    System.out.print(&quot;Renter username: &quot;); String renter = scanner.nextLine();</span>
+<span class="fc" id="L103">                    System.out.print(&quot;Start date (YYYY-MM-DD): &quot;); String start = scanner.nextLine();</span>
+<span class="fc" id="L104">                    System.out.print(&quot;Number of rental days: &quot;); int days = Integer.parseInt(scanner.nextLine());</span>
+<span class="fc" id="L105">                    service.rentItem(id, renter, start, days);</span>
+<span class="fc" id="L106">                    System.out.println(&quot;Lease tracking parameters registered safely.&quot;);</span>
+<span class="fc" id="L107">                }</span>
+                case &quot;5&quot; -&gt; {
+<span class="fc" id="L109">                    System.out.print(&quot;Enter Item ID to return: &quot;); int id = Integer.parseInt(scanner.nextLine());</span>
+<span class="fc" id="L110">                    System.out.print(&quot;Return time execution timestamp: &quot;); String time = scanner.nextLine();</span>
+<span class="fc" id="L111">                    service.returnItem(id, time);</span>
+<span class="fc" id="L112">                    System.out.println(&quot;Item log successfully closed and marked safe for circulation again.&quot;);</span>
+<span class="fc" id="L113">                }</span>
+                case &quot;6&quot; -&gt; {
+<span class="fc" id="L115">                    currentUser = null;</span>
+<span class="fc" id="L116">                    System.out.println(&quot;Logged out securely.&quot;);</span>
+<span class="fc" id="L117">                }</span>
+<span class="fc" id="L118">                default -&gt; System.out.println(&quot;Invalid selection parameter index.&quot;);</span>
+            }
+<span class="fc" id="L120">        } catch (Exception e) {</span>
+<span class="fc" id="L121">            System.out.println(&quot;Operation Failure: &quot; + e.getMessage());</span>
+<span class="fc" id="L122">        }</span>
+<span class="fc" id="L123">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

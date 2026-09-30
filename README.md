@@ -1,41 +1,40 @@
-# rental-tracker
-A personal rental tracker that lists items, shows your inventory, rents things out, and confirms returns.
+# Rental Tracker
 
-# 🗃️ Database Schema Definitions
+A SQLite-backed CLI for listing equipment, tracking rentals, delisting inventory, and confirming returns. The schema and full column constraints are documented in [ERD.md](ERD.md).
 
-### 👥 Users Table
-Stores the primary identity details for individuals participating in the rental ecosystem.
+## Run
 
-| Data Type | Column Name | Key | Description |
-| :--- | :--- | :---: | :--- |
-| `int` | **id** | **PK** | System-generated unique identifier for each user profile. |
-| `text` | **username** | **UK** | Unique handle chosen by the user; used for terminal authentication. |
+```sh
+mvn clean package
+mvn exec:java -Dexec.mainClass="tech.kood.rental.Main"
+```
 
----
+The default database is `app.db`. Create Profile signs in immediately; selecting the same username on a later run loads the existing account. Seed at least six listed items in `app.db` before the review demonstration.
 
-### 📦 Listed Items Table
-Contains properties for asset equipment placed into market circulation by asset owners.
+## Test And Coverage
 
-| Data Type | Column Name | Key | Description |
-| :--- | :--- | :---: | :--- |
-| `int` | **item_id** | **PK** | Unique sequential item catalog tracking number. |
-| `int` | **owner_id** | **FK** | Maps back to `Users.id`. Defines which user owns and lists this item. |
-| `text` | **item_name** | | Short title/display name of the equipment asset. |
-| `text` | **description** | | Helpful context details regarding conditions or accessories included. |
-| `real` | **cost_per_day**| | Daily fixed financial pricing rate calculation value. |
-| `text` | **status** | | **State Constraint**: Must strictly evaluate as `available`, `rented`, or `unlisted`. |
+Tests use a fresh temporary SQLite file per test and execute the production `schema.sql`; no database mocks are used. Run the tests and create the JaCoCo report with:
 
----
+```sh
+mvn clean verify
+```
 
-### ⏳ Rentals Table
-Tracks the transaction history, current custody timelines, and structural lifecycle metrics of item orders.
+The HTML report is generated at `coverage-report/index.html`.
 
-| Data Type | Column Name | Key | Description |
-| :--- | :--- | :---: | :--- |
-| `int` | **rental_id** | **PK** | Auto-incremented registration sequence identification token. |
-| `int` | **item_id** | **FK** | Maps to `listed_items.item_id`. Identifies the equipment asset being leased. |
-| `int` | **renter_id** | **FK** | Maps to `Users.id`. Tracks the client account signing out the asset. |
-| `text` | **start_time** | | Chronological date stamp when the active possession begins. |
-| `text` | **end_time** | | Expected expiration deadline date stamp for the contract window. |
-| `text` | **returned_at**| | Nullable entry field updated only when physical delivery is marked safe. |
-| `text` | **status** | | **State Constraint**: Tracks the current order progress as either `active` or `closed`. |
+## Architecture
+
+- `Main` initializes the schema and wires the concrete dependencies.
+- `transport.CliHandler` handles input/output and calls only `RentalService`.
+- `service.RentalService` enforces rental rules, state transitions, and date calculation; it does not issue SQL.
+- `repository` classes own SQL, row mapping, and translation of SQLite constraint errors into rule-specific exceptions.
+- `infrastructure.DatabaseConnection` creates SQLite connections and enables foreign-key enforcement on each one.
+
+The boundaries are enforced through the dependency direction and constructor injection: the CLI depends on the service API, the service depends on repository APIs, and repositories depend on the database connection. SQLite constraints provide a final integrity boundary beneath service validation.
+
+## Demo Lifecycle
+
+1. Launch the CLI and create or load a profile.
+2. List an item, view public listings, then open inventory and delist an item.
+3. Rent an available item by entering a renter username, start date, and number of days.
+4. Confirm the return; a normally rented item becomes available, while an item delisted during rental remains unlisted.
+5. Run `mvn clean verify` to show the automated tests and coverage report.

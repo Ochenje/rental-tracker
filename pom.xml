@@ -47,6 +47,9 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.15</version>
+                <configuration>
+                    <outputDirectory>${project.basedir}/coverage-report</outputDirectory>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

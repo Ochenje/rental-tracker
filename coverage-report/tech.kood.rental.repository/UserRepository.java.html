@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rental-tracker</a> &gt; <a href="index.source.html" class="el_package">tech.kood.rental.repository</a> &gt; <span class="el_source">UserRepository.java</span></div><h1>UserRepository.java</h1><pre class="source lang-java linenums">package tech.kood.rental.repository;
+
+import tech.kood.rental.domain.User;
+import tech.kood.rental.infrastructure.DatabaseConnection;
+import tech.kood.rental.repository.exception.ConstraintViolationException;
+import tech.kood.rental.repository.exception.DatabaseException;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class UserRepository {
+    private final DatabaseConnection db;
+
+<span class="fc" id="L16">    public UserRepository(DatabaseConnection db) {</span>
+<span class="fc" id="L17">        this.db = db;</span>
+<span class="fc" id="L18">    }</span>
+
+    public void insert(String username) {
+<span class="fc" id="L21">        String sql = &quot;INSERT INTO users (username) VALUES (?)&quot;;</span>
+<span class="fc" id="L22">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
+<span class="fc" id="L23">            pstmt.setString(1, username);</span>
+<span class="fc" id="L24">            pstmt.executeUpdate();</span>
+<span class="fc" id="L25">        } catch (SQLException e) {</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">            if (ConstraintViolationException.isConstraintViolation(e)) {</span>
+<span class="fc" id="L27">                throw ConstraintViolationException.from(e);</span>
+            }
+<span class="fc" id="L29">            throw new DatabaseException(&quot;Error creating user profile.&quot;, e);</span>
+<span class="fc" id="L30">        }</span>
+<span class="fc" id="L31">    }</span>
+
+    public User findById(int userId) {
+<span class="fc" id="L34">        String sql = &quot;SELECT * FROM users WHERE id = ?&quot;;</span>
+<span class="fc" id="L35">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
+<span class="fc" id="L36">            pstmt.setInt(1, userId);</span>
+<span class="fc" id="L37">            try (ResultSet rs = pstmt.executeQuery()) {</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">                if (rs.next()) {</span>
+<span class="fc" id="L39">                    return new User(rs.getInt(&quot;id&quot;), rs.getString(&quot;username&quot;), rs.getString(&quot;created_at&quot;));</span>
+                }
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">            }</span>
+<span class="pc bpc" id="L42" title="2 of 4 branches missed.">        } catch (SQLException e) {</span>
+<span class="fc" id="L43">            throw new DatabaseException(&quot;Error retrieving user identity record.&quot;, e);</span>
+<span class="fc" id="L44">        }</span>
+<span class="fc" id="L45">        return null;</span>
+    }
+
+    public User findByUsername(String username) {
+<span class="fc" id="L49">        String sql = &quot;SELECT * FROM users WHERE username = ?&quot;;</span>
+<span class="fc" id="L50">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
+<span class="fc" id="L51">            pstmt.setString(1, username);</span>
+<span class="fc" id="L52">            try (ResultSet rs = pstmt.executeQuery()) {</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">                if (rs.next()) {</span>
+<span class="fc" id="L54">                    return new User(rs.getInt(&quot;id&quot;), rs.getString(&quot;username&quot;), rs.getString(&quot;created_at&quot;));</span>
+                }
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">            }</span>
+<span class="pc bpc" id="L57" title="2 of 4 branches missed.">        } catch (SQLException e) {</span>
+<span class="fc" id="L58">            throw new DatabaseException(&quot;Error pulling user identity record.&quot;, e);</span>
+<span class="fc" id="L59">        }</span>
+<span class="fc" id="L60">        return null;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

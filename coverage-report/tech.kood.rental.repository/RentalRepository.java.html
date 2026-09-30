@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RentalRepository.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rental-tracker</a> &gt; <a href="index.source.html" class="el_package">tech.kood.rental.repository</a> &gt; <span class="el_source">RentalRepository.java</span></div><h1>RentalRepository.java</h1><pre class="source lang-java linenums">package tech.kood.rental.repository;
+
+import tech.kood.rental.domain.Rental;
+import tech.kood.rental.infrastructure.DatabaseConnection;
+import tech.kood.rental.repository.exception.ConstraintViolationException;
+import tech.kood.rental.repository.exception.DatabaseException;
+import tech.kood.rental.repository.exception.NotFoundException;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class RentalRepository {
+    private final DatabaseConnection db;
+
+<span class="fc" id="L19">    public RentalRepository(DatabaseConnection db) {</span>
+<span class="fc" id="L20">        this.db = db;</span>
+<span class="fc" id="L21">    }</span>
+
+    public void insert(int itemId, int renterId, String start, String end) {
+<span class="fc" id="L24">        String sql = &quot;INSERT INTO rentals (item_id, renter_id, start_time, end_time, status) VALUES (?, ?, ?, ?, 'active')&quot;;</span>
+<span class="fc" id="L25">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
+<span class="fc" id="L26">            pstmt.setInt(1, itemId);</span>
+<span class="fc" id="L27">            pstmt.setInt(2, renterId);</span>
+<span class="fc" id="L28">            pstmt.setString(3, start);</span>
+<span class="fc" id="L29">            pstmt.setString(4, end);</span>
+<span class="fc" id="L30">            pstmt.executeUpdate();</span>
+<span class="fc" id="L31">        } catch (SQLException e) {</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">            if (ConstraintViolationException.isConstraintViolation(e)) {</span>
+<span class="fc" id="L33">                throw ConstraintViolationException.from(e);</span>
+            }
+<span class="fc" id="L35">            throw new DatabaseException(&quot;Failed booking data insert transaction.&quot;, e);</span>
+<span class="fc" id="L36">        }</span>
+<span class="fc" id="L37">    }</span>
+
+    public Rental findById(int rentalId) {
+<span class="fc" id="L40">        String sql = &quot;SELECT * FROM rentals WHERE rental_id = ?&quot;;</span>
+<span class="fc" id="L41">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
+<span class="fc" id="L42">            pstmt.setInt(1, rentalId);</span>
+<span class="fc" id="L43">            try (ResultSet rs = pstmt.executeQuery()) {</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">                return rs.next() ? mapRowToRental(rs) : null;</span>
+            }
+<span class="fc" id="L46">        } catch (SQLException e) {</span>
+<span class="fc" id="L47">            throw new DatabaseException(&quot;Error retrieving rental record.&quot;, e);</span>
+        }
+    }
+
+    public List&lt;Rental&gt; findByRenterId(int renterId) {
+<span class="fc" id="L52">        List&lt;Rental&gt; rentals = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L53">        String sql = &quot;SELECT * FROM rentals WHERE renter_id = ? ORDER BY rental_id&quot;;</span>
+<span class="fc" id="L54">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
+<span class="fc" id="L55">            pstmt.setInt(1, renterId);</span>
+<span class="fc" id="L56">            try (ResultSet rs = pstmt.executeQuery()) {</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">                while (rs.next()) {</span>
+<span class="fc" id="L58">                    rentals.add(mapRowToRental(rs));</span>
+                }
+            }
+<span class="fc" id="L61">        } catch (SQLException e) {</span>
+<span class="fc" id="L62">            throw new DatabaseException(&quot;Error retrieving renter's rental history.&quot;, e);</span>
+<span class="fc" id="L63">        }</span>
+<span class="fc" id="L64">        return rentals;</span>
+    }
+
+    public Rental findActiveByItemId(int itemId) {
+<span class="fc" id="L68">        String sql = &quot;SELECT * FROM rentals WHERE item_id = ? AND status = 'active'&quot;;</span>
+<span class="fc" id="L69">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
+<span class="fc" id="L70">            pstmt.setInt(1, itemId);</span>
+<span class="fc" id="L71">            try (ResultSet rs = pstmt.executeQuery()) {</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">                if (rs.next()) {</span>
+<span class="fc" id="L73">                    return mapRowToRental(rs);</span>
+                }
+<span class="pc bpc" id="L75" title="1 of 2 branches missed.">            }</span>
+<span class="pc bpc" id="L76" title="2 of 4 branches missed.">        } catch (SQLException e) {</span>
+<span class="fc" id="L77">            throw new DatabaseException(&quot;Failure searching active rental entries.&quot;, e);</span>
+<span class="fc" id="L78">        }</span>
+<span class="fc" id="L79">        return null;</span>
+    }
+
+    public void closeRental(int rentalId, String returnTime) {
+<span class="fc" id="L83">        String sql = &quot;UPDATE rentals SET returned_at = ?, status = 'closed' WHERE rental_id = ?&quot;;</span>
+<span class="fc" id="L84">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
+<span class="fc" id="L85">            pstmt.setString(1, returnTime);</span>
+<span class="fc" id="L86">            pstmt.setInt(2, rentalId);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">            if (pstmt.executeUpdate() == 0) {</span>
+<span class="fc" id="L88">                throw new NotFoundException(&quot;Active booking target record not found.&quot;);</span>
+            }
+<span class="fc" id="L90">        } catch (SQLException e) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (ConstraintViolationException.isConstraintViolation(e)) {</span>
+<span class="fc" id="L92">                throw ConstraintViolationException.from(e);</span>
+            }
+<span class="fc" id="L94">            throw new DatabaseException(&quot;Error processing update status on rental closing transaction.&quot;, e);</span>
+<span class="fc" id="L95">        }</span>
+<span class="fc" id="L96">    }</span>
+
+    private Rental mapRowToRental(ResultSet rs) throws SQLException {
+<span class="fc" id="L99">        return new Rental(</span>
+<span class="fc" id="L100">                rs.getInt(&quot;rental_id&quot;),</span>
+<span class="fc" id="L101">                rs.getInt(&quot;item_id&quot;),</span>
+<span class="fc" id="L102">                rs.getInt(&quot;renter_id&quot;),</span>
+<span class="fc" id="L103">                rs.getString(&quot;start_time&quot;),</span>
+<span class="fc" id="L104">                rs.getString(&quot;end_time&quot;),</span>
+<span class="fc" id="L105">                rs.getString(&quot;returned_at&quot;),</span>
+<span class="fc" id="L106">                rs.getString(&quot;status&quot;)</span>
+        );
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
