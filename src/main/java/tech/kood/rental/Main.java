@@ -16,7 +16,9 @@ public class Main {
     public static void main(String[] args) {
         String databasePath = args.length == 0 ? System.getProperty("rental.database", "app.db") : args[0];
         DatabaseConnection dbConnection = new DatabaseConnection(databasePath);
-        initializeDatabase(dbConnection, Main.class.getClassLoader().getResourceAsStream("schema.sql"));
+        if (!initializeDatabase(dbConnection, Main.class.getClassLoader().getResourceAsStream("schema.sql"))) {
+            return;
+        }
 
         UserRepository userRepo = new UserRepository(dbConnection);
         ItemRepository itemRepo = new ItemRepository(dbConnection);
@@ -27,12 +29,11 @@ public class Main {
         cliHandler.run();
     }
 
-    static void initializeDatabase(DatabaseConnection db, InputStream schema) {
+    static boolean initializeDatabase(DatabaseConnection db, InputStream schema) {
         try (Connection conn = db.getConnection();
              Statement stmt = conn.createStatement();
              InputStream is = schema) {
-            
-            if (is == null) return;
+            if (is == null) return true;
             try (Scanner scanner = new Scanner(is).useDelimiter(";")) {
                 while (scanner.hasNext()) {
                     String sql = scanner.next().trim();
@@ -41,8 +42,10 @@ public class Main {
                     }
                 }
             }
+            return true;
         } catch (Exception e) {
             System.err.println("Failed to initialize database: " + e.getMessage());
+            return false;
         }
     }
 }

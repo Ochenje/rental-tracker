@@ -45,19 +45,33 @@ public class UserRepository {
 <span class="fc" id="L45">        return null;</span>
     }
 
+    public User findFirst() {
+<span class="fc" id="L49">        String sql = &quot;SELECT * FROM users ORDER BY id LIMIT 1&quot;;</span>
+<span class="fc" id="L50">        try (Connection conn = db.getConnection();</span>
+<span class="fc" id="L51">             PreparedStatement pstmt = conn.prepareStatement(sql);</span>
+<span class="fc" id="L52">             ResultSet rs = pstmt.executeQuery()) {</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            if (rs.next()) {</span>
+<span class="fc" id="L54">                return new User(rs.getInt(&quot;id&quot;), rs.getString(&quot;username&quot;), rs.getString(&quot;created_at&quot;));</span>
+            }
+<span class="pc bpc" id="L56" title="3 of 6 branches missed.">        } catch (SQLException e) {</span>
+<span class="fc" id="L57">            throw new DatabaseException(&quot;Error retrieving the existing account.&quot;, e);</span>
+<span class="fc" id="L58">        }</span>
+<span class="fc" id="L59">        return null;</span>
+    }
+
     public User findByUsername(String username) {
-<span class="fc" id="L49">        String sql = &quot;SELECT * FROM users WHERE username = ?&quot;;</span>
-<span class="fc" id="L50">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
-<span class="fc" id="L51">            pstmt.setString(1, username);</span>
-<span class="fc" id="L52">            try (ResultSet rs = pstmt.executeQuery()) {</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">                if (rs.next()) {</span>
-<span class="fc" id="L54">                    return new User(rs.getInt(&quot;id&quot;), rs.getString(&quot;username&quot;), rs.getString(&quot;created_at&quot;));</span>
+<span class="fc" id="L63">        String sql = &quot;SELECT * FROM users WHERE username = ?&quot;;</span>
+<span class="fc" id="L64">        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {</span>
+<span class="fc" id="L65">            pstmt.setString(1, username);</span>
+<span class="fc" id="L66">            try (ResultSet rs = pstmt.executeQuery()) {</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">                if (rs.next()) {</span>
+<span class="fc" id="L68">                    return new User(rs.getInt(&quot;id&quot;), rs.getString(&quot;username&quot;), rs.getString(&quot;created_at&quot;));</span>
                 }
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">            }</span>
-<span class="pc bpc" id="L57" title="2 of 4 branches missed.">        } catch (SQLException e) {</span>
-<span class="fc" id="L58">            throw new DatabaseException(&quot;Error pulling user identity record.&quot;, e);</span>
-<span class="fc" id="L59">        }</span>
-<span class="fc" id="L60">        return null;</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">            }</span>
+<span class="pc bpc" id="L71" title="2 of 4 branches missed.">        } catch (SQLException e) {</span>
+<span class="fc" id="L72">            throw new DatabaseException(&quot;Error pulling user identity record.&quot;, e);</span>
+<span class="fc" id="L73">        }</span>
+<span class="fc" id="L74">        return null;</span>
     }
 
 }

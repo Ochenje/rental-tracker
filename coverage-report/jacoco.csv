@@ -1,6 +1,6 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
-rental-tracker,tech.kood.rental.service,RentalService,0,275,1,33,0,59,1,30,0,14
-rental-tracker,tech.kood.rental,Main,2,106,3,11,0,25,3,7,0,3
+rental-tracker,tech.kood.rental.service,RentalService,0,341,0,42,0,72,0,40,0,19
+rental-tracker,tech.kood.rental,Main,2,115,3,13,0,26,3,8,0,3
 rental-tracker,tech.kood.rental.repository.exception,CannotOpenDatabaseException,0,5,0,0,0,2,0,1,0,1
 rental-tracker,tech.kood.rental.repository.exception,NotNullViolationException,0,5,0,0,0,2,0,1,0,1
 rental-tracker,tech.kood.rental.repository.exception,ForeignKeyViolationException,0,5,0,0,0,2,0,1,0,1
@@ -11,10 +11,10 @@ rental-tracker,tech.kood.rental.repository.exception,NotFoundException,0,4,0,0,0
 rental-tracker,tech.kood.rental.repository.exception,ConstraintViolationException,0,75,0,16,0,11,0,11,0,3
 rental-tracker,tech.kood.rental.repository.exception,CheckConstraintViolationException,0,5,0,0,0,2,0,1,0,1
 rental-tracker,tech.kood.rental.infrastructure,DatabaseConnection,0,27,0,0,0,9,0,2,0,2
-rental-tracker,tech.kood.rental.repository,UserRepository,0,152,6,12,0,35,6,7,0,4
-rental-tracker,tech.kood.rental.repository,RentalRepository,0,240,3,15,0,65,3,13,0,7
+rental-tracker,tech.kood.rental.repository,UserRepository,0,205,9,17,0,45,9,9,0,5
+rental-tracker,tech.kood.rental.repository,RentalRepository,0,281,3,17,0,76,3,15,0,8
 rental-tracker,tech.kood.rental.repository,ItemRepository,0,253,3,15,0,69,3,13,0,7
 rental-tracker,tech.kood.rental.domain,Item,0,24,0,0,0,9,0,1,0,1
 rental-tracker,tech.kood.rental.domain,Rental,0,24,0,0,0,9,0,1,0,1
 rental-tracker,tech.kood.rental.domain,User,0,12,0,0,0,5,0,1,0,1
-rental-tracker,tech.kood.rental.transport,CliHandler,0,362,0,25,0,80,0,22,0,7
+rental-tracker,tech.kood.rental.transport,CliHandler,1,873,1,113,0,184,1,77,0,19

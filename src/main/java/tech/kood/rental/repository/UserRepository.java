@@ -45,6 +45,20 @@ public class UserRepository {
         return null;
     }
 
+    public User findFirst() {
+        String sql = "SELECT * FROM users ORDER BY id LIMIT 1";
+        try (Connection conn = db.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) {
+                return new User(rs.getInt("id"), rs.getString("username"), rs.getString("created_at"));
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("Error retrieving the existing account.", e);
+        }
+        return null;
+    }
+
     public User findByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
         try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {

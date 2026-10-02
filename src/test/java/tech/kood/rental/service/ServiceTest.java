@@ -102,6 +102,42 @@ class ServiceTest {
     }
 
     @Test
+    void relistingItemWithoutActiveRentalMakesItAvailable() throws Exception {
+        int ownerId = createUser("owner");
+        testDatabase.items.insert(ownerId, "Saw", "Hand saw", 1, "available");
+        service.delistItem(1, ownerId);
+
+        service.relistItem(1, ownerId);
+
+        assertEquals("available", text("SELECT status FROM listed_items WHERE item_id = 1"));
+        assertEquals(1, service.getAvailableItems().size());
+    }
+
+    @Test
+    void relistingIsBlockedWhileAnActiveRentalExists() throws Exception {
+        int ownerId = createUser("owner");
+        int renterId = createUser("renter");
+        testDatabase.items.insert(ownerId, "Saw", "Hand saw", 1, "available");
+        service.rentItem(1, renterId, "2026-03-01", 2);
+        service.delistItem(1, ownerId);
+
+        assertThrows(IllegalStateException.class, () -> service.relistItem(1, ownerId));
+        assertEquals("unlisted", text("SELECT status FROM listed_items WHERE item_id = 1"));
+    }
+
+    @Test
+    void relistingRequiresExistingOwnedUnlistedItem() throws Exception {
+        int ownerId = createUser("owner");
+        int otherUserId = createUser("other");
+        testDatabase.items.insert(ownerId, "Saw", "Hand saw", 1, "available");
+
+        assertThrows(IllegalArgumentException.class, () -> service.relistItem(404, ownerId));
+        assertThrows(IllegalArgumentException.class, () -> service.relistItem(1, otherUserId));
+        assertThrows(IllegalStateException.class, () -> service.relistItem(1, ownerId));
+        assertEquals("available", text("SELECT status FROM listed_items WHERE item_id = 1"));
+    }
+
+    @Test
     void alreadyRentedItemCannotBeRentedAgain() throws Exception {
         int ownerId = createUser("owner");
         int renterId = createUser("renter");
@@ -184,8 +220,10 @@ class ServiceTest {
     @Test
     void invalidQueriesAndBlankNamesFailWithoutWriting() throws Exception {
         assertNull(service.getUser("missing"));
+        assertThrows(IllegalArgumentException.class, () -> service.registerUser(null));
         assertThrows(IllegalArgumentException.class, () -> service.registerUser("   "));
         assertThrows(IllegalArgumentException.class, () -> service.getOrRegisterUser(null));
+        assertThrows(IllegalArgumentException.class, () -> service.getOrRegisterUser("   "));
         assertThrows(IllegalArgumentException.class, () -> service.listItem(1, "Saw", "Hand saw", 0));
         assertThrows(IllegalArgumentException.class,
                 () -> service.rentItem(404, "renter", "2026-03-01", 1));

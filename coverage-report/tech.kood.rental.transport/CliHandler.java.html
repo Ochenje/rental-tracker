@@ -1,125 +1,269 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CliHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rental-tracker</a> &gt; <a href="index.source.html" class="el_package">tech.kood.rental.transport</a> &gt; <span class="el_source">CliHandler.java</span></div><h1>CliHandler.java</h1><pre class="source lang-java linenums">package tech.kood.rental.transport;
 
 import tech.kood.rental.domain.Item;
+import tech.kood.rental.domain.Rental;
 import tech.kood.rental.domain.User;
 import tech.kood.rental.service.RentalService;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class CliHandler {
+    private static final int PAGE_SIZE = 5;
+
     private final RentalService service;
     private final Scanner scanner;
     private User currentUser;
-<span class="fc" id="L14">    private boolean running = true;</span>
+<span class="fc" id="L21">    private boolean running = true;</span>
 
     public CliHandler(RentalService service) {
-<span class="fc" id="L17">        this(service, new Scanner(System.in));</span>
-<span class="fc" id="L18">    }</span>
+<span class="fc" id="L24">        this(service, new Scanner(System.in));</span>
+<span class="fc" id="L25">    }</span>
 
-<span class="fc" id="L20">    public CliHandler(RentalService service, Scanner scanner) {</span>
-<span class="fc" id="L21">        this.service = service;</span>
-<span class="fc" id="L22">        this.scanner = scanner;</span>
-<span class="fc" id="L23">    }</span>
+<span class="fc" id="L27">    public CliHandler(RentalService service, Scanner scanner) {</span>
+<span class="fc" id="L28">        this.service = service;</span>
+<span class="fc" id="L29">        this.scanner = scanner;</span>
+<span class="fc" id="L30">    }</span>
 
     public void run() {
-<span class="fc" id="L26">        System.out.println(&quot;Welcome to Nairobi Rental Tracker Terminal Workspace.&quot;);</span>
-<span class="fc bfc" id="L27" title="All 2 branches covered.">        while (running) {</span>
-<span class="fc bfc" id="L28" title="All 2 branches covered.">            if (currentUser == null) {</span>
-<span class="fc" id="L29">                showAuthMenu();</span>
-            } else {
-<span class="fc" id="L31">                showMainMenu();</span>
-            }
-        }
-<span class="fc" id="L34">    }</span>
-
-    private void showAuthMenu() {
-<span class="fc" id="L37">        System.out.println(&quot;\n1. Create Profile\n2. Authenticate Sign-In\n3. Exit System&quot;);</span>
-<span class="fc" id="L38">        System.out.print(&quot;Action Selection -&gt; &quot;);</span>
-<span class="fc" id="L39">        String selection = scanner.nextLine();</span>
-
+<span class="fc" id="L33">        System.out.println(&quot;=== Rental tracker ===&quot;);</span>
         try {
-<span class="fc bfc" id="L42" title="All 2 branches covered.">            if (&quot;1&quot;.equals(selection)) {</span>
-<span class="fc" id="L43">                System.out.print(&quot;Choose unique username: &quot;);</span>
-<span class="fc" id="L44">                String name = scanner.nextLine();</span>
-<span class="fc" id="L45">                currentUser = service.getOrRegisterUser(name);</span>
-<span class="fc" id="L46">                System.out.println(&quot;Account ready for: &quot; + currentUser.username);</span>
-<span class="fc bfc" id="L47" title="All 2 branches covered.">            } else if (&quot;2&quot;.equals(selection)) {</span>
-<span class="fc" id="L48">                System.out.print(&quot;Input username: &quot;);</span>
-<span class="fc" id="L49">                String name = scanner.nextLine();</span>
-<span class="fc" id="L50">                User user = service.getUser(name);</span>
-<span class="fc bfc" id="L51" title="All 2 branches covered.">                if (user != null) {</span>
-<span class="fc" id="L52">                    currentUser = user;</span>
-<span class="fc" id="L53">                    System.out.println(&quot;Authentication authenticated! Session active for: &quot; + currentUser.username);</span>
-                } else {
-<span class="fc" id="L55">                    System.out.println(&quot;No matching user profile record.&quot;);</span>
-                }
-<span class="fc bfc" id="L57" title="All 2 branches covered.">            } else if (&quot;3&quot;.equals(selection)) {</span>
-<span class="fc" id="L58">                running = false;</span>
-            } else {
-<span class="fc" id="L60">                System.out.println(&quot;Invalid selection parameter index.&quot;);</span>
+<span class="fc" id="L35">            currentUser = service.getExistingAccount();</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">            if (currentUser == null) {</span>
+<span class="fc" id="L37">                System.out.print(&quot;Username: &quot;);</span>
+<span class="fc" id="L38">                String username = readLine();</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">                if (username == null) return;</span>
+<span class="fc" id="L40">                currentUser = service.getOrRegisterUser(username);</span>
             }
-<span class="fc" id="L62">        } catch (Exception e) {</span>
-<span class="fc" id="L63">            System.out.println(&quot;Operation Exception Error: &quot; + e.getMessage());</span>
-<span class="fc" id="L64">        }</span>
-<span class="fc" id="L65">    }</span>
+<span class="fc" id="L42">        } catch (RuntimeException e) {</span>
+<span class="fc" id="L43">            System.out.println(&quot;Unable to load account: &quot; + e.getMessage());</span>
+<span class="fc" id="L44">            return;</span>
+<span class="fc" id="L45">        }</span>
+
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        while (running) {</span>
+<span class="fc" id="L48">            showMainMenu();</span>
+        }
+<span class="fc" id="L50">    }</span>
 
     private void showMainMenu() {
-<span class="fc" id="L68">        System.out.println(&quot;\n--- Connected Workspace Dashboard ---&quot;);</span>
-<span class="fc" id="L69">        System.out.println(&quot;1. List an Item Asset\n2. View Public Listings\n3. View Inventory / Delist\n4. Rent an Item\n5. Return an Item\n6. Sign Out&quot;);</span>
-<span class="fc" id="L70">        System.out.print(&quot;Action Selection -&gt; &quot;);</span>
-<span class="fc" id="L71">        String choice = scanner.nextLine();</span>
+<span class="fc" id="L53">        System.out.println(&quot;\n=== Rental tracker ===&quot;);</span>
+<span class="fc" id="L54">        System.out.println(&quot;1) List an item&quot;);</span>
+<span class="fc" id="L55">        System.out.println(&quot;2) View my inventory&quot;);</span>
+<span class="fc" id="L56">        System.out.println(&quot;3) Record a rental&quot;);</span>
+<span class="fc" id="L57">        System.out.println(&quot;4) Confirm a return&quot;);</span>
+<span class="fc" id="L58">        System.out.println(&quot;5) Exit&quot;);</span>
+<span class="fc" id="L59">        System.out.print(&quot;&gt; &quot;);</span>
+<span class="fc" id="L60">        String choice = readLine();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (choice == null) return;</span>
 
         try {
-<span class="fc bfc" id="L74" title="All 7 branches covered.">            switch (choice) {</span>
-                case &quot;1&quot; -&gt; {
-<span class="fc" id="L76">                    System.out.print(&quot;Item name: &quot;); String name = scanner.nextLine();</span>
-<span class="fc" id="L77">                    System.out.print(&quot;Description context: &quot;); String desc = scanner.nextLine();</span>
-<span class="fc" id="L78">                    System.out.print(&quot;Daily pricing cost rate: &quot;); double cost = Double.parseDouble(scanner.nextLine());</span>
-<span class="fc" id="L79">                    service.listItem(currentUser.id, name, desc, cost);</span>
-<span class="fc" id="L80">                    System.out.println(&quot;Catalog asset successfully deployed into circulation marketplace.&quot;);</span>
-<span class="fc" id="L81">                }</span>
-                case &quot;2&quot; -&gt; {
-<span class="fc" id="L83">                    List&lt;Item&gt; catalog = service.getAvailableItems();</span>
-<span class="fc bfc" id="L84" title="All 2 branches covered.">                    if (catalog.isEmpty()) {</span>
-<span class="fc" id="L85">                        System.out.println(&quot;No available items listed at the moment.&quot;);</span>
-                    } else {
-<span class="fc" id="L87">                        catalog.forEach(i -&gt; System.out.printf(&quot;[%d] %s - %s ($%.2f/day)%n&quot;, i.itemId, i.itemName, i.description, i.costPerDay));</span>
-                    }
-<span class="fc" id="L89">                }</span>
-                case &quot;3&quot; -&gt; {
-<span class="fc" id="L91">                    List&lt;Item&gt; inventory = service.getUserInventory(currentUser.id);</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">                    if (inventory.isEmpty()) {</span>
-<span class="fc" id="L93">                        System.out.println(&quot;Your inventory is empty.&quot;);</span>
-<span class="fc" id="L94">                        break;</span>
-                    }
-<span class="fc" id="L96">                    inventory.forEach(i -&gt; System.out.printf(&quot;[%d] %s (%s)%n&quot;, i.itemId, i.itemName, i.status));</span>
-<span class="fc" id="L97">                    System.out.print(&quot;Item ID to delist (0 to return): &quot;); int id = Integer.parseInt(scanner.nextLine());</span>
-<span class="fc bfc" id="L98" title="All 2 branches covered.">                    if (id != 0) service.delistItem(id, currentUser.id);</span>
-<span class="fc" id="L99">                }</span>
-                case &quot;4&quot; -&gt; {
-<span class="fc" id="L101">                    System.out.print(&quot;Enter Item ID target: &quot;); int id = Integer.parseInt(scanner.nextLine());</span>
-<span class="fc" id="L102">                    System.out.print(&quot;Renter username: &quot;); String renter = scanner.nextLine();</span>
-<span class="fc" id="L103">                    System.out.print(&quot;Start date (YYYY-MM-DD): &quot;); String start = scanner.nextLine();</span>
-<span class="fc" id="L104">                    System.out.print(&quot;Number of rental days: &quot;); int days = Integer.parseInt(scanner.nextLine());</span>
-<span class="fc" id="L105">                    service.rentItem(id, renter, start, days);</span>
-<span class="fc" id="L106">                    System.out.println(&quot;Lease tracking parameters registered safely.&quot;);</span>
-<span class="fc" id="L107">                }</span>
-                case &quot;5&quot; -&gt; {
-<span class="fc" id="L109">                    System.out.print(&quot;Enter Item ID to return: &quot;); int id = Integer.parseInt(scanner.nextLine());</span>
-<span class="fc" id="L110">                    System.out.print(&quot;Return time execution timestamp: &quot;); String time = scanner.nextLine();</span>
-<span class="fc" id="L111">                    service.returnItem(id, time);</span>
-<span class="fc" id="L112">                    System.out.println(&quot;Item log successfully closed and marked safe for circulation again.&quot;);</span>
-<span class="fc" id="L113">                }</span>
-                case &quot;6&quot; -&gt; {
-<span class="fc" id="L115">                    currentUser = null;</span>
-<span class="fc" id="L116">                    System.out.println(&quot;Logged out securely.&quot;);</span>
-<span class="fc" id="L117">                }</span>
-<span class="fc" id="L118">                default -&gt; System.out.println(&quot;Invalid selection parameter index.&quot;);</span>
+<span class="fc bfc" id="L64" title="All 6 branches covered.">            switch (choice) {</span>
+<span class="fc" id="L65">                case &quot;1&quot; -&gt; listItem();</span>
+<span class="fc" id="L66">                case &quot;2&quot; -&gt; showInventory();</span>
+<span class="fc" id="L67">                case &quot;3&quot; -&gt; showAvailableItems();</span>
+<span class="fc" id="L68">                case &quot;4&quot; -&gt; showActiveRentals();</span>
+<span class="fc" id="L69">                case &quot;5&quot; -&gt; running = false;</span>
+<span class="fc" id="L70">                default -&gt; System.out.println(&quot;Please choose an option from 1 to 5.&quot;);</span>
             }
-<span class="fc" id="L120">        } catch (Exception e) {</span>
-<span class="fc" id="L121">            System.out.println(&quot;Operation Failure: &quot; + e.getMessage());</span>
-<span class="fc" id="L122">        }</span>
-<span class="fc" id="L123">    }</span>
+<span class="fc" id="L72">        } catch (RuntimeException e) {</span>
+<span class="fc" id="L73">            System.out.println(&quot;Operation failed: &quot; + e.getMessage());</span>
+<span class="fc" id="L74">        }</span>
+<span class="fc" id="L75">    }</span>
+
+    private void listItem() {
+<span class="fc" id="L78">        System.out.print(&quot;Item name: &quot;);</span>
+<span class="fc" id="L79">        String name = readRequiredLine();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (name == null) return;</span>
+<span class="fc" id="L81">        System.out.print(&quot;Description: &quot;);</span>
+<span class="fc" id="L82">        String description = readRequiredLine();</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (description == null) return;</span>
+<span class="fc" id="L84">        System.out.print(&quot;Cost per day: &quot;);</span>
+<span class="fc" id="L85">        String cost = readRequiredLine();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        if (cost == null) return;</span>
+<span class="fc" id="L87">        service.listItem(currentUser.id, name, description, Double.parseDouble(cost));</span>
+<span class="fc" id="L88">        System.out.println(&quot;Item listed.&quot;);</span>
+<span class="fc" id="L89">    }</span>
+
+    private void showInventory() {
+<span class="fc" id="L92">        showItemPages(&quot;My inventory&quot;, () -&gt; service.getUserInventory(currentUser.id),</span>
+<span class="fc" id="L93">                item -&gt; item.itemName + &quot;    &quot; + item.status,</span>
+                this::showInventoryItemDetail);
+<span class="fc" id="L95">    }</span>
+
+    private void showAvailableItems() {
+<span class="fc" id="L98">        showItemPages(&quot;Record a rental&quot;, service::getAvailableItems,</span>
+<span class="fc" id="L99">                item -&gt; item.itemName + &quot;    &quot; + String.format(&quot;$%.2f/day&quot;, item.costPerDay),</span>
+                this::showRentalItemDetail);
+<span class="fc" id="L101">    }</span>
+
+    private void showItemPages(String title, Supplier&lt;List&lt;Item&gt;&gt; loadItems, Function&lt;Item, String&gt; row,
+                               Consumer&lt;Item&gt; onSelect) {
+<span class="fc" id="L105">        int page = 0;</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        while (running) {</span>
+<span class="fc" id="L107">            List&lt;Item&gt; items = loadItems.get();</span>
+<span class="fc" id="L108">            int start = page * PAGE_SIZE;</span>
+<span class="fc" id="L109">            int end = Math.min(start + PAGE_SIZE, items.size());</span>
+<span class="fc" id="L110">            System.out.println(&quot;\n=== &quot; + title + &quot; ===&quot;);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (items.isEmpty()) {</span>
+<span class="fc" id="L112">                System.out.println(&quot;No items.&quot;);</span>
+            }
+<span class="fc bfc" id="L114" title="All 2 branches covered.">            for (int index = start; index &lt; end; index++) {</span>
+<span class="fc" id="L115">                System.out.printf(&quot;%d) %s%n&quot;, index - start + 1, row.apply(items.get(index)));</span>
+            }
+
+<span class="fc" id="L118">            int option = end - start + 1;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">            if (page &gt; 0) System.out.printf(&quot;%d) Previous page%n&quot;, option++);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            if (end &lt; items.size()) System.out.printf(&quot;%d) Next page%n&quot;, option++);</span>
+<span class="fc" id="L121">            System.out.printf(&quot;%d) Back to menu%n&quot;, option);</span>
+<span class="fc" id="L122">            System.out.print(&quot;&gt; &quot;);</span>
+<span class="fc" id="L123">            Integer selection = readSelection();</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">            if (selection == null) return;</span>
+
+<span class="fc bfc" id="L126" title="All 4 branches covered.">            if (selection &gt;= 1 &amp;&amp; selection &lt;= end - start) {</span>
+<span class="fc" id="L127">                onSelect.accept(items.get(start + selection - 1));</span>
+<span class="fc bfc" id="L128" title="All 4 branches covered.">            } else if (page &gt; 0 &amp;&amp; selection == end - start + 1) {</span>
+<span class="fc" id="L129">                page--;</span>
+<span class="fc bfc" id="L130" title="All 6 branches covered.">            } else if (end &lt; items.size() &amp;&amp; selection == end - start + (page &gt; 0 ? 2 : 1)) {</span>
+<span class="fc" id="L131">                page++;</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            } else if (selection == option) {</span>
+<span class="fc" id="L133">                return;</span>
+            } else {
+<span class="fc" id="L135">                System.out.println(&quot;Invalid selection.&quot;);</span>
+            }
+<span class="fc" id="L137">        }</span>
+<span class="fc" id="L138">    }</span>
+
+    private void showInventoryItemDetail(Item item) {
+<span class="fc" id="L141">        printItemDetails(item);</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (&quot;available&quot;.equals(item.status)) {</span>
+<span class="fc" id="L143">            System.out.println(&quot;1) Delist&quot;);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        } else if (&quot;unlisted&quot;.equals(item.status)) {</span>
+<span class="fc" id="L145">            System.out.println(&quot;1) Relist&quot;);</span>
+        }
+<span class="fc" id="L147">        System.out.println(&quot;2) Back to list&quot;);</span>
+<span class="fc" id="L148">        System.out.print(&quot;&gt; &quot;);</span>
+<span class="fc" id="L149">        Integer selection = readSelection();</span>
+<span class="fc bfc" id="L150" title="All 4 branches covered.">        if (selection == null || selection == 2) return;</span>
+<span class="fc bfc" id="L151" title="All 4 branches covered.">        if (selection == 1 &amp;&amp; &quot;available&quot;.equals(item.status)) {</span>
+<span class="fc" id="L152">            service.delistItem(item.itemId, currentUser.id);</span>
+<span class="fc bfc" id="L153" title="All 4 branches covered.">        } else if (selection == 1 &amp;&amp; &quot;unlisted&quot;.equals(item.status)) {</span>
+<span class="fc" id="L154">            service.relistItem(item.itemId, currentUser.id);</span>
+        } else {
+<span class="fc" id="L156">            System.out.println(&quot;Invalid selection.&quot;);</span>
+        }
+<span class="fc" id="L158">    }</span>
+
+    private void showRentalItemDetail(Item item) {
+<span class="fc" id="L161">        printItemDetails(item);</span>
+<span class="fc" id="L162">        System.out.println(&quot;1) Rent&quot;);</span>
+<span class="fc" id="L163">        System.out.println(&quot;2) Back to list&quot;);</span>
+<span class="fc" id="L164">        System.out.print(&quot;&gt; &quot;);</span>
+<span class="fc" id="L165">        Integer selection = readSelection();</span>
+<span class="fc bfc" id="L166" title="All 4 branches covered.">        if (selection == null || selection != 1) return;</span>
+
+<span class="fc" id="L168">        System.out.print(&quot;Renter username: &quot;);</span>
+<span class="fc" id="L169">        String renter = readRequiredLine();</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (renter == null) return;</span>
+<span class="fc" id="L171">        System.out.print(&quot;Number of days: &quot;);</span>
+<span class="fc" id="L172">        String days = readRequiredLine();</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (days == null) return;</span>
+<span class="fc" id="L174">        service.rentItem(item.itemId, renter, LocalDate.now().toString(), Integer.parseInt(days));</span>
+<span class="fc" id="L175">        System.out.println(&quot;Rental recorded.&quot;);</span>
+<span class="fc" id="L176">    }</span>
+
+    private void showActiveRentals() {
+<span class="fc" id="L179">        int page = 0;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        while (running) {</span>
+<span class="fc" id="L181">            List&lt;Rental&gt; rentals = service.getActiveRentals(currentUser.id);</span>
+<span class="fc" id="L182">            int start = page * PAGE_SIZE;</span>
+<span class="fc" id="L183">            int end = Math.min(start + PAGE_SIZE, rentals.size());</span>
+<span class="fc" id="L184">            System.out.println(&quot;\n=== Confirm a return ===&quot;);</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">            if (rentals.isEmpty()) System.out.println(&quot;No active rentals.&quot;);</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">            for (int index = start; index &lt; end; index++) {</span>
+<span class="fc" id="L187">                Rental rental = rentals.get(index);</span>
+<span class="fc" id="L188">                Item item = service.getItem(rental.itemId);</span>
+<span class="fc" id="L189">                User renter = service.getUserById(rental.renterId);</span>
+<span class="fc" id="L190">                System.out.printf(&quot;%d) %s    %s%n&quot;, index - start + 1, item.itemName, renter.username);</span>
+            }
+
+<span class="fc" id="L193">            int option = end - start + 1;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (page &gt; 0) System.out.printf(&quot;%d) Previous page%n&quot;, option++);</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">            if (end &lt; rentals.size()) System.out.printf(&quot;%d) Next page%n&quot;, option++);</span>
+<span class="fc" id="L196">            System.out.printf(&quot;%d) Back to menu%n&quot;, option);</span>
+<span class="fc" id="L197">            System.out.print(&quot;&gt; &quot;);</span>
+<span class="fc" id="L198">            Integer selection = readSelection();</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">            if (selection == null) return;</span>
+
+<span class="fc bfc" id="L201" title="All 4 branches covered.">            if (selection &gt;= 1 &amp;&amp; selection &lt;= end - start) {</span>
+<span class="fc" id="L202">                showRentalDetail(rentals.get(start + selection - 1));</span>
+<span class="fc bfc" id="L203" title="All 4 branches covered.">            } else if (page &gt; 0 &amp;&amp; selection == end - start + 1) {</span>
+<span class="fc" id="L204">                page--;</span>
+<span class="fc bfc" id="L205" title="All 6 branches covered.">            } else if (end &lt; rentals.size() &amp;&amp; selection == end - start + (page &gt; 0 ? 2 : 1)) {</span>
+<span class="fc" id="L206">                page++;</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">            } else if (selection == option) {</span>
+<span class="fc" id="L208">                return;</span>
+            } else {
+<span class="fc" id="L210">                System.out.println(&quot;Invalid selection.&quot;);</span>
+            }
+<span class="fc" id="L212">        }</span>
+<span class="fc" id="L213">    }</span>
+
+    private void showRentalDetail(Rental rental) {
+<span class="fc" id="L216">        Item item = service.getItem(rental.itemId);</span>
+<span class="fc" id="L217">        User renter = service.getUserById(rental.renterId);</span>
+<span class="fc" id="L218">        System.out.println(&quot;\n=== &quot; + item.itemName + &quot; ===&quot;);</span>
+<span class="fc" id="L219">        System.out.println(&quot;renter   &quot; + renter.username);</span>
+<span class="fc" id="L220">        System.out.println(&quot;start    &quot; + rental.startTime);</span>
+<span class="fc" id="L221">        System.out.println(&quot;end      &quot; + rental.endTime);</span>
+<span class="fc" id="L222">        System.out.println(&quot;status   &quot; + rental.status);</span>
+<span class="fc" id="L223">        System.out.println(&quot;1) Confirm return&quot;);</span>
+<span class="fc" id="L224">        System.out.println(&quot;2) Back to list&quot;);</span>
+<span class="fc" id="L225">        System.out.print(&quot;&gt; &quot;);</span>
+<span class="fc" id="L226">        Integer selection = readSelection();</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">        if (selection == null) return;</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">        if (selection == 1) {</span>
+<span class="fc" id="L229">            service.returnItem(item.itemId, LocalDate.now().toString());</span>
+<span class="fc" id="L230">            System.out.println(&quot;Return confirmed.&quot;);</span>
+<span class="fc bfc" id="L231" title="All 2 branches covered.">        } else if (selection != 2) {</span>
+<span class="fc" id="L232">            System.out.println(&quot;Invalid selection.&quot;);</span>
+        }
+<span class="fc" id="L234">    }</span>
+
+    private void printItemDetails(Item item) {
+<span class="fc" id="L237">        User owner = service.getUserById(item.ownerId);</span>
+<span class="fc" id="L238">        System.out.println(&quot;\n=== &quot; + item.itemName + &quot; ===&quot;);</span>
+<span class="fc" id="L239">        System.out.println(&quot;description     &quot; + item.description);</span>
+<span class="fc" id="L240">        System.out.println(&quot;cost per day    &quot; + item.costPerDay);</span>
+<span class="fc" id="L241">        System.out.println(&quot;status          &quot; + item.status);</span>
+<span class="fc" id="L242">        System.out.println(&quot;owner           &quot; + owner.username);</span>
+<span class="fc" id="L243">        System.out.println(&quot;listed          &quot; + item.createdAt);</span>
+<span class="fc" id="L244">    }</span>
+
+    private String readRequiredLine() {
+<span class="fc" id="L247">        String line = readLine();</span>
+<span class="fc bfc" id="L248" title="All 4 branches covered.">        return line == null || line.isBlank() ? null : line.trim();</span>
+    }
+
+    private String readLine() {
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        if (!scanner.hasNextLine()) {</span>
+<span class="fc" id="L253">            running = false;</span>
+<span class="fc" id="L254">            return null;</span>
+        }
+<span class="fc" id="L256">        return scanner.nextLine();</span>
+    }
+
+    private Integer readSelection() {
+<span class="fc" id="L260">        String value = readLine();</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        if (value == null) return null;</span>
+        try {
+<span class="fc" id="L263">            return Integer.parseInt(value);</span>
+<span class="fc" id="L264">        } catch (NumberFormatException e) {</span>
+<span class="fc" id="L265">            return -1;</span>
+        }
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

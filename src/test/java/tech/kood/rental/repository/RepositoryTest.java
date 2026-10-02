@@ -7,6 +7,8 @@ import tech.kood.rental.TestDatabase;
 import tech.kood.rental.domain.Item;
 import tech.kood.rental.domain.Rental;
 import tech.kood.rental.domain.User;
+import tech.kood.rental.infrastructure.DatabaseConnection;
+import tech.kood.rental.repository.exception.CannotOpenDatabaseException;
 import tech.kood.rental.repository.exception.CheckConstraintViolationException;
 import tech.kood.rental.repository.exception.ConstraintViolationException;
 import tech.kood.rental.repository.exception.DatabaseException;
@@ -19,6 +21,7 @@ import tech.kood.rental.repository.exception.UniqueConstraintViolationException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,6 +40,7 @@ class RepositoryTest {
 
     @Test
     void insertUserPersistsAndSupportsIdAndUsernameQueries() throws Exception {
+        assertNull(testDatabase.users.findFirst());
         testDatabase.users.insert("alice");
 
         assertEquals(1, count("SELECT COUNT(*) FROM users WHERE username = 'alice'"));
@@ -44,6 +48,7 @@ class RepositoryTest {
         assertNotNull(user);
         assertEquals("alice", user.username);
         assertEquals(user.id, testDatabase.users.findById(user.id).id);
+        assertEquals(user.id, testDatabase.users.findFirst().id);
         assertNull(testDatabase.users.findById(-1));
         assertNull(testDatabase.users.findByUsername("missing"));
     }
@@ -79,6 +84,25 @@ class RepositoryTest {
         assertNull(testDatabase.rentals.findById(-1));
         assertNull(testDatabase.rentals.findActiveByItemId(-1));
         assertTrue(testDatabase.rentals.findByRenterId(-1).isEmpty());
+    }
+
+    @Test
+    void activeRentalsForOwnerAreOrderedByDueDate() throws Exception {
+        int ownerId = createUser("owner");
+        int renterId = createUser("renter");
+        testDatabase.items.insert(ownerId, "Later", "Later due", 2, "rented");
+        testDatabase.items.insert(ownerId, "Earlier", "Earlier due", 2, "rented");
+        testDatabase.items.insert(createUser("other-owner"), "Other", "Other owner", 2, "rented");
+        testDatabase.rentals.insert(1, renterId, "2026-03-01", "2026-03-09");
+        testDatabase.rentals.insert(2, renterId, "2026-03-01", "2026-03-03");
+        testDatabase.rentals.insert(3, renterId, "2026-03-01", "2026-03-02");
+
+        var rentals = testDatabase.rentals.findActiveByOwnerId(ownerId);
+
+        assertEquals(2, rentals.size());
+        assertEquals(2, rentals.get(0).itemId);
+        assertEquals(1, rentals.get(1).itemId);
+        assertTrue(testDatabase.rentals.findActiveByOwnerId(-1).isEmpty());
     }
 
     @Test
@@ -159,6 +183,7 @@ class RepositoryTest {
 
         assertThrows(DatabaseException.class, () -> testDatabase.users.insert("alice"));
         assertThrows(DatabaseException.class, () -> testDatabase.users.findById(1));
+        assertThrows(DatabaseException.class, () -> testDatabase.users.findFirst());
         assertThrows(DatabaseException.class, () -> testDatabase.users.findByUsername("alice"));
         assertThrows(DatabaseException.class, () -> testDatabase.items.insert(1, "Saw", "Hand saw", 1, "available"));
         assertThrows(DatabaseException.class, () -> testDatabase.items.findAllAvailable());
@@ -169,6 +194,7 @@ class RepositoryTest {
         assertThrows(DatabaseException.class, () -> testDatabase.rentals.findById(1));
         assertThrows(DatabaseException.class, () -> testDatabase.rentals.findByRenterId(1));
         assertThrows(DatabaseException.class, () -> testDatabase.rentals.findActiveByItemId(1));
+        assertThrows(DatabaseException.class, () -> testDatabase.rentals.findActiveByOwnerId(1));
         assertThrows(DatabaseException.class, () -> testDatabase.rentals.closeRental(1, "returned"));
     }
 
@@ -205,6 +231,18 @@ class RepositoryTest {
         }
 
         assertThrows(DatabaseException.class, () -> testDatabase.users.findById(1));
+    }
+
+    @Test
+    void repositoriesPropagateTypedConnectionFailures() {
+        DatabaseConnection unavailable = new DatabaseConnection(
+                Path.of("target", "missing-parent", "unavailable.db").toString());
+
+        assertThrows(CannotOpenDatabaseException.class, () -> new UserRepository(unavailable).findById(1));
+        assertThrows(CannotOpenDatabaseException.class, () -> new UserRepository(unavailable).findByUsername("user"));
+        assertThrows(CannotOpenDatabaseException.class, () -> new UserRepository(unavailable).findFirst());
+        assertThrows(CannotOpenDatabaseException.class, () -> new ItemRepository(unavailable).findById(1));
+        assertThrows(CannotOpenDatabaseException.class, () -> new RentalRepository(unavailable).findActiveByItemId(1));
     }
 
     private int createUser(String username) {

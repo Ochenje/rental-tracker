@@ -43,6 +43,14 @@ public class RentalService {
         return userRepo.findByUsername(username);
     }
 
+    public User getExistingAccount() {
+        return userRepo.findFirst();
+    }
+
+    public User getUserById(int userId) {
+        return userRepo.findById(userId);
+    }
+
     public void listItem(int ownerId, String name, String desc, double cost) {
         if (cost <= 0) throw new IllegalArgumentException("Cost allocation metric must evaluate above 0.");
         itemRepo.insert(ownerId, name, desc, cost, "available");
@@ -56,11 +64,32 @@ public class RentalService {
         return itemRepo.findByOwnerId(ownerId);
     }
 
+    public Item getItem(int itemId) {
+        return itemRepo.findById(itemId);
+    }
+
     public void delistItem(int itemId, int ownerId) {
         Item item = itemRepo.findById(itemId);
         if (item == null) throw new IllegalArgumentException("Item identity value does not exist.");
         if (item.ownerId != ownerId) throw new IllegalArgumentException("Only the owner can delist this item.");
         itemRepo.updateStatus(itemId, "unlisted");
+    }
+
+    public void relistItem(int itemId, int ownerId) {
+        Item item = itemRepo.findById(itemId);
+        if (item == null) throw new IllegalArgumentException("Item identity value does not exist.");
+        if (item.ownerId != ownerId) throw new IllegalArgumentException("Only the owner can relist this item.");
+        if (!"unlisted".equals(item.status)) {
+            throw new IllegalStateException("Only an unlisted item can be relisted.");
+        }
+        if (rentalRepo.findActiveByItemId(itemId) != null) {
+            throw new IllegalStateException("An item with an active rental cannot be relisted.");
+        }
+        itemRepo.updateStatus(itemId, "available");
+    }
+
+    public List<Rental> getActiveRentals(int ownerId) {
+        return rentalRepo.findActiveByOwnerId(ownerId);
     }
 
     public void rentItem(int itemId, int renterId, String start, int rentalDays) {

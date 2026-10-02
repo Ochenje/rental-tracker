@@ -9,6 +9,8 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Statement;
 
@@ -92,6 +94,31 @@ class MainTest {
         } finally {
             Files.deleteIfExists(databasePath);
         }
+    }
+
+    @Test
+    void startupReportsSchemaExecutionFailure() throws Exception {
+        Path databasePath = Files.createTempFile("rental-main-bad-schema-", ".db");
+        var originalErr = System.err;
+        ByteArrayOutputStream errors = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(errors));
+        try {
+            boolean initialized = Main.initializeDatabase(
+                    new DatabaseConnection(databasePath.toString()),
+                    new ByteArrayInputStream("INVALID SQL;".getBytes()) {
+                        @Override
+                        public void close() throws IOException {
+                            super.close();
+                            throw new IOException("failed to close schema stream");
+                        }
+                    });
+            assertFalse(initialized);
+        } finally {
+            System.setErr(originalErr);
+            Files.deleteIfExists(databasePath);
+        }
+
+        assertTrue(errors.toString().contains("Failed to initialize database:"));
     }
 
     @Test

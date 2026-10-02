@@ -16,34 +16,37 @@ import java.util.Scanner;
     public static void main(String[] args) {
 <span class="fc bfc" id="L17" title="All 2 branches covered.">        String databasePath = args.length == 0 ? System.getProperty(&quot;rental.database&quot;, &quot;app.db&quot;) : args[0];</span>
 <span class="fc" id="L18">        DatabaseConnection dbConnection = new DatabaseConnection(databasePath);</span>
-<span class="fc" id="L19">        initializeDatabase(dbConnection, Main.class.getClassLoader().getResourceAsStream(&quot;schema.sql&quot;));</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">        if (!initializeDatabase(dbConnection, Main.class.getClassLoader().getResourceAsStream(&quot;schema.sql&quot;))) {</span>
+<span class="fc" id="L20">            return;</span>
+        }
 
-<span class="fc" id="L21">        UserRepository userRepo = new UserRepository(dbConnection);</span>
-<span class="fc" id="L22">        ItemRepository itemRepo = new ItemRepository(dbConnection);</span>
-<span class="fc" id="L23">        RentalRepository rentalRepo = new RentalRepository(dbConnection);</span>
-<span class="fc" id="L24">        RentalService rentalService = new RentalService(userRepo, itemRepo, rentalRepo);</span>
+<span class="fc" id="L23">        UserRepository userRepo = new UserRepository(dbConnection);</span>
+<span class="fc" id="L24">        ItemRepository itemRepo = new ItemRepository(dbConnection);</span>
+<span class="fc" id="L25">        RentalRepository rentalRepo = new RentalRepository(dbConnection);</span>
+<span class="fc" id="L26">        RentalService rentalService = new RentalService(userRepo, itemRepo, rentalRepo);</span>
 
-<span class="fc" id="L26">        CliHandler cliHandler = new CliHandler(rentalService);</span>
-<span class="fc" id="L27">        cliHandler.run();</span>
-<span class="fc" id="L28">    }</span>
+<span class="fc" id="L28">        CliHandler cliHandler = new CliHandler(rentalService);</span>
+<span class="fc" id="L29">        cliHandler.run();</span>
+<span class="fc" id="L30">    }</span>
 
-    static void initializeDatabase(DatabaseConnection db, InputStream schema) {
-<span class="fc" id="L31">        try (Connection conn = db.getConnection();</span>
-<span class="fc" id="L32">             Statement stmt = conn.createStatement();</span>
-<span class="fc" id="L33">             InputStream is = schema) {</span>
-            
-<span class="fc bfc" id="L35" title="All 2 branches covered.">            if (is == null) return;</span>
-<span class="fc" id="L36">            try (Scanner scanner = new Scanner(is).useDelimiter(&quot;;&quot;)) {</span>
-<span class="fc bfc" id="L37" title="All 2 branches covered.">                while (scanner.hasNext()) {</span>
-<span class="fc" id="L38">                    String sql = scanner.next().trim();</span>
-<span class="fc bfc" id="L39" title="All 2 branches covered.">                    if (!sql.isEmpty()) {</span>
-<span class="fc" id="L40">                        stmt.execute(sql);</span>
+    static boolean initializeDatabase(DatabaseConnection db, InputStream schema) {
+<span class="fc" id="L33">        try (Connection conn = db.getConnection();</span>
+<span class="fc" id="L34">             Statement stmt = conn.createStatement();</span>
+<span class="fc" id="L35">             InputStream is = schema) {</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">            if (is == null) return true;</span>
+<span class="fc" id="L37">            try (Scanner scanner = new Scanner(is).useDelimiter(&quot;;&quot;)) {</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">                while (scanner.hasNext()) {</span>
+<span class="fc" id="L39">                    String sql = scanner.next().trim();</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">                    if (!sql.isEmpty()) {</span>
+<span class="fc" id="L41">                        stmt.execute(sql);</span>
                     }
-<span class="fc" id="L42">                }</span>
+<span class="fc" id="L43">                }</span>
             }
-<span class="pc bpc" id="L44" title="3 of 6 branches missed.">        } catch (Exception e) {</span>
-<span class="fc" id="L45">            System.err.println(&quot;Failed to initialize database: &quot; + e.getMessage());</span>
-<span class="fc" id="L46">        }</span>
-<span class="fc" id="L47">    }</span>
+<span class="fc" id="L45">            return true;</span>
+<span class="pc bpc" id="L46" title="3 of 6 branches missed.">        } catch (Exception e) {</span>
+<span class="fc" id="L47">            System.err.println(&quot;Failed to initialize database: &quot; + e.getMessage());</span>
+<span class="fc" id="L48">            return false;</span>
+        }
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

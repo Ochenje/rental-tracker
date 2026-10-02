@@ -79,6 +79,25 @@ public class RentalRepository {
         return null;
     }
 
+    public List<Rental> findActiveByOwnerId(int ownerId) {
+        List<Rental> rentals = new ArrayList<>();
+        String sql = "SELECT rentals.* FROM rentals " +
+                "JOIN listed_items ON rentals.item_id = listed_items.item_id " +
+                "WHERE listed_items.owner_id = ? AND rentals.status = 'active' " +
+                "ORDER BY rentals.end_time, rentals.rental_id";
+        try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, ownerId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    rentals.add(mapRowToRental(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new DatabaseException("Error retrieving active rentals for owner's items.", e);
+        }
+        return rentals;
+    }
+
     public void closeRental(int rentalId, String returnTime) {
         String sql = "UPDATE rentals SET returned_at = ?, status = 'closed' WHERE rental_id = ?";
         try (Connection conn = db.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
